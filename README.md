@@ -1,33 +1,30 @@
-# My-f1-Game
+# F1 게임 프로젝트 (기초 게임엔진 개발)
 
-A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
+LibGDX와 Box2D를 사용하여 개발 중인 2D 탑다운 레이싱 게임입니다.
 
-This project was generated with a template including simple application launchers and a main class extending `Game` that sets the first screen.
+## 주요 기능 (Features)
 
-## Platforms
+### 1. 어드밴스드 차량 물리 모델
+- **파라미터 기반 핸들링:** `최고 속도`, `가속력`, `그립`, `회전력` 등의 변수를 통해 차량의 주행 특성을 쉽게 튜닝할 수 있습니다.
+- **횡방향 마찰력 (타이어 그립):** 차량이 옆으로 미끄러지는 것을 억제하고, 조향 시에는 마찰력을 조절하여 부드러운 코너링이 가능합니다.
+- **공기 저항:** 속도에 비례하여 공기 저항이 적용되어 자연스러운 감속 및 최고 속도 유지가 구현됩니다.
+- **부드러운 제동:** `linearDamping`을 이용해 급정지나 후진 없이 부드럽게 감속하여 멈추는 브레이크 시스템을 갖추고 있습니다.
 
-- `core`: Main module with the application logic shared by all platforms.
-- `lwjgl3`: Primary desktop platform using LWJGL3; was called 'desktop' in older docs.
+### 2. 최적화된 렌더링 및 에셋 관리
+- **AssetManager 도입:** 게임 시작 시 모든 이미지 에셋을 미리 불러와, 게임 중 발생할 수 있는 버벅임(Stuttering)을 원천 차단합니다.
+- **가비지 최소화(GC-Friendly):** 게임 루프 내에서 불필요한 객체 생성을 방지하고 재사용 변수를 활용하여 '가비지 컬렉션'으로 인한 성능 저하를 최소화합니다.
 
-## Gradle
+### 3. 동적 카메라 시스템
+- **추적 카메라:** 자동차를 따라다니는 '오버 더 숄더' 스타일의 카메라를 구현했습니다.
+- **부드러운 움직임:** 카메라의 위치와 회전 모두에 `lerp`(선형 보간)를 적용하여, 물리 엔진의 미세한 떨림에도 불구하고 안정적이고 부드러운 화면을 제공합니다.
+- **시야 확보:** 카메라가 자동차보다 항상 약간 앞을 비추도록 하여, 플레이어가 다가오는 트랙을 더 쉽게 인지할 수 있습니다.
 
-This project uses [Gradle](https://gradle.org/) to manage dependencies.
-The Gradle wrapper was included, so you can run Gradle tasks using `gradlew.bat` or `./gradlew` commands.
-Useful Gradle tasks and flags:
+### 4. 물리 및 충돌 시스템
+- **Box2D 기반:** LibGDX의 Box2D 물리 엔진을 사용합니다.
+- **충돌 감지 및 효과:** `ContactListener`를 통해 벽과의 충돌을 감지하고, 충돌 시 속도를 줄이는 등 페널티를 적용합니다. 벽에 끼이는 현상을 방지하는 로직도 포함됩니다.
+- **충돌 경계:** Tiled 맵 에디터로 제작된 보이지 않는 트랙 경계선과 화면 가장자리 경계선을 모두 사용합니다.
 
-- `--continue`: when using this flag, errors will not stop the tasks from running.
-- `--daemon`: thanks to this flag, Gradle daemon will be used to run chosen tasks.
-- `--offline`: when using this flag, cached dependency archives will be used.
-- `--refresh-dependencies`: this flag forces validation of all dependencies. Useful for snapshot versions.
-- `build`: builds sources and archives of every project.
-- `cleanEclipse`: removes Eclipse project data.
-- `cleanIdea`: removes IntelliJ project data.
-- `clean`: removes `build` folders, which store compiled classes and built archives.
-- `eclipse`: generates Eclipse project data.
-- `idea`: generates IntelliJ project data.
-- `lwjgl3:jar`: builds application's runnable jar, which can be found at `lwjgl3/build/libs`.
-- `lwjgl3:run`: starts the application.
-- `test`: runs unit tests (if any).
-
-Note that most tasks that are not specific to a single project can be run with `name:` prefix, where the `name` should be replaced with the ID of a specific project.
-For example, `core:clean` removes `build` folder only from the `core` project.
+## 조작법
+- **가속:** `UP` (↑)
+- **조향:** `LEFT` (←) / `RIGHT` (→)
+- **브레이크:** `SPACE`
