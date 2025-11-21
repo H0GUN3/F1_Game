@@ -3,6 +3,8 @@ package com.mygame.f1.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -41,11 +43,30 @@ public class SplashScreen implements Screen {
         panel.add(new Label("Loading...", skin)).row();
 
         root.add(panel).center();
+
+        // Preload tiled map before gameplay starts
+        if (Main.mapPath == null) {
+            String path = null;
+            if (Gdx.files.internal("maps/new_map.tmx").exists()) path = "maps/new_map.tmx";
+            else if (Gdx.files.internal("maps/track1.tmx").exists()) path = "maps/track1.tmx";
+            else if (Gdx.files.internal("maps/track.tmx").exists()) path = "maps/track.tmx";
+            else if (Gdx.files.internal("track.tmx").exists()) path = "track.tmx";
+            Main.mapPath = path;
+            if (path != null) {
+                try {
+                    Main.assetManager.setLoader(TiledMap.class, new com.badlogic.gdx.maps.tiled.TmxMapLoader(new InternalFileHandleResolver()));
+                    Main.assetManager.load(path, TiledMap.class);
+                } catch (Exception ignored) {}
+            }
+        }
     }
 
     @Override public void render(float delta) {
         timer += delta;
-        if (timer >= duration) { game.setScreen(new LoginScreen(game)); return; }
+        // Drive asset loading while splash is visible
+        try { Main.assetManager.update(); } catch (Exception ignored) {}
+        boolean mapReady = (Main.mapPath == null) || Main.assetManager.isLoaded(Main.mapPath, TiledMap.class);
+        if (timer >= duration && mapReady) { game.setScreen(new LoginScreen(game)); return; }
         Gdx.gl.glClearColor(0,0,0,1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         stage.act(delta);

@@ -13,7 +13,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UserStore {
+public class UserStore implements AuthStore {
     private static final String STORE_PATH = "data/users.json";
     private final Map<String, Record> users = new HashMap<>();
 
@@ -90,4 +90,3 @@ public class UserStore {
         }
     }
 }
-

@@ -46,20 +46,32 @@ public class MainMenuScreen implements Screen {
 
         TextButton single = new TextButton("Single Play", skin);
         TextButton multi = new TextButton("Multi Play (TBD)", skin);
+        TextButton leaderboard = new TextButton("Leaderboard", skin);
         TextButton settings = new TextButton("Settings", skin);
         TextButton exit = new TextButton("Exit", skin);
-        items = new TextButton[]{single, multi, settings, exit};
+        items = new TextButton[]{single, multi, leaderboard, settings, exit};
+        single.setUserObject("Single Play");
+        multi.setUserObject("Multi Play (TBD)");
+        leaderboard.setUserObject("Leaderboard");
+        settings.setUserObject("Settings");
+        exit.setUserObject("Exit");
+
+        // Focus arrow indicators
+        // Focus arrow handled by text prefix
 
         single.addListener(new ClickListener(){ @Override public void clicked(InputEvent e, float x, float y){ game.setScreen(new GameScreen(game)); }});
         multi.addListener(new ClickListener(){ @Override public void clicked(InputEvent e, float x, float y){ game.setScreen(new MultiplayerPlaceholderScreen(game)); }});
+        leaderboard.addListener(new ClickListener(){ @Override public void clicked(InputEvent e, float x, float y){ game.setScreen(new LeaderboardScreen(game)); }});
         settings.addListener(new ClickListener(){ @Override public void clicked(InputEvent e, float x, float y){ game.setScreen(new SettingsScreen(game)); }});
         exit.addListener(new ClickListener(){ @Override public void clicked(InputEvent e, float x, float y){ Gdx.app.exit(); }});
 
         panel.add(new Label("Main Menu", skin, "title")).row();
         panel.add(single).row();
         panel.add(multi).row();
+        panel.add(leaderboard).row();
         panel.add(settings).row();
         panel.add(exit).row();
+        panel.add(new Label("Arrows move  Enter select  ESC exit  F1 debug", skin)).padTop(6);
 
         Image logo = null;
         try { logoTex = new Texture(Gdx.files.internal("ui/login/logo.png")); logo = new Image(logoTex); } catch (Exception ignored) {}
@@ -75,6 +87,10 @@ public class MainMenuScreen implements Screen {
     private void updateFocus(){
         for (int i=0;i<items.length;i++){
             items[i].setChecked(i==focus);
+            Object baseObj = items[i].getUserObject();
+            String base = baseObj==null? items[i].getText().toString().trim() : baseObj.toString();
+            String prefix = (i==focus?"▶ ":"  ");
+            items[i].setText(prefix + base);
         }
     }
 

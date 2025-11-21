@@ -127,7 +127,8 @@ public final class SkinFactory {
             appendRange(chars, 0xAC00, 0xD7A3); // Hangul Syllables
             appendRange(chars, 0x1100, 0x11FF); // Hangul Jamo
             appendRange(chars, 0x3131, 0x318E); // Hangul Compatibility Jamo
-            chars.append('•'); // password bullet
+            // Common UI symbols needed in labels and hints
+            chars.append("•↑↓←→◀▶▲▼");
             p.characters = chars.toString();
             BitmapFont f = gen.generateFont(p);
             gen.dispose();

@@ -5,8 +5,71 @@ dependencies {
   api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
+  implementation "org.xerial:sqlite-jdbc:3.45.3.0"
+  implementation project(":shared")
+  // Multiplayer client networking (pinned)
+  implementation "com.esotericsoftware:kryonet:2.22.0-RC1"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:5.10.2"
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.10.2"
+  testImplementation "org.assertj:assertj-core:3.25.3"
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
+}
+
+tasks.withType(Test).configureEach {
+  useJUnitPlatform()
+}
+
+// Utility task to dump users from SQLite for verification
+tasks.register('dumpUsers', JavaExec) {
+  group = 'verification'
+  description = 'Prints all users from the SQLite DB'
+  dependsOn testClasses
+  classpath = sourceSets.test.runtimeClasspath
+  mainClass = 'com.mygame.f1.tools.DbDump'
+}
+
+// Smoke: connect to lobby server and create a room (manual)
+tasks.register('lobbySmoke', JavaExec) {
+  group = 'verification'
+  description = 'Lobby client smoke test (connect/create room)'
+  classpath = sourceSets.main.runtimeClasspath
+  mainClass = 'com.mygame.f1.network.LobbyClientSmoke'
+  // Args: host tcp udp username roomName
+  args = [System.getenv('MP_HOST') ?: 'localhost', System.getenv('MP_TCP') ?: '54555', System.getenv('MP_UDP') ?: '54777', System.getenv('MP_USER') ?: 'Tester', System.getenv('MP_ROOM') ?: 'TestRoom']
+}
+
+// Hold: create a room and keep connection for N seconds (default 60)
+tasks.register('lobbyHold', JavaExec) {
+  group = 'verification'
+  description = 'Lobby hold: create room and keep connection for N seconds'
+  classpath = sourceSets.main.runtimeClasspath
+  mainClass = 'com.mygame.f1.network.LobbyHoldSmoke'
+  args = [System.getenv('MP_HOST') ?: 'localhost', System.getenv('MP_TCP') ?: '54555', System.getenv('MP_UDP') ?: '54777', System.getenv('MP_USER') ?: 'Holder', System.getenv('MP_ROOM') ?: 'HoldRoom', System.getenv('MP_HOLD') ?: '60']
+}
+
+// Join: join a given room id
+tasks.register('lobbyJoin', JavaExec) {
+  group = 'verification'
+  description = 'Lobby join: join given room id'
+  classpath = sourceSets.main.runtimeClasspath
+  mainClass = 'com.mygame.f1.network.LobbyJoinSmoke'
+  args = [System.getenv('MP_HOST') ?: 'localhost', System.getenv('MP_TCP') ?: '54555', System.getenv('MP_UDP') ?: '54777', System.getenv('MP_USER') ?: 'Joiner', System.getenv('MP_ROOM_ID') ?: '']
+}
+
+// Full roundtrip: host + joiner clients execute create/join/start flow
+tasks.register('lobbyRoundtrip', JavaExec) {
+  group = 'verification'
+  description = 'Spin up two lobby clients (host/joiner) and trigger a race start'
+  classpath = sourceSets.main.runtimeClasspath
+  mainClass = 'com.mygame.f1.network.LobbyRoundtripSmoke'
+  args = [
+    System.getenv('MP_HOST') ?: 'localhost',
+    System.getenv('MP_TCP') ?: '54555',
+    System.getenv('MP_UDP') ?: '54777',
+    System.getenv('MP_HOST_USER') ?: 'Host',
+    System.getenv('MP_JOIN_USER') ?: 'Joiner'
+  ]
 }

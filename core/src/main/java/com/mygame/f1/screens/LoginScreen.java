@@ -11,12 +11,14 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.mygame.f1.Main;
+import com.mygame.f1.data.AuthStore;
+import com.mygame.f1.data.SqliteUserStore;
 import com.mygame.f1.data.UserStore;
 import com.mygame.f1.ui.SkinFactory;
 
 public class LoginScreen implements Screen {
     private final Main game;
-    private final UserStore store = new UserStore();
+    private final AuthStore store;
     private Stage stage;
     private Skin skin;
     private TextButton btnLoginRef;
@@ -25,6 +27,9 @@ public class LoginScreen implements Screen {
 
     public LoginScreen(Main game) {
         this.game = game;
+        AuthStore chosen;
+        try { chosen = new SqliteUserStore(); } catch (Throwable t) { chosen = new UserStore(); }
+        this.store = chosen;
     }
 
     @Override
@@ -54,7 +59,6 @@ public class LoginScreen implements Screen {
 
         TextButton btnLogin = new TextButton("로그인 (Enter)", skin);
         TextButton btnSignup = new TextButton("회원가입", skin);
-        TextButton btnBack = new TextButton("뒤로", skin);
         this.btnLoginRef = btnLogin;
 
         btnLogin.addListener(new ClickListener(){
@@ -76,11 +80,7 @@ public class LoginScreen implements Screen {
             }
         });
 
-        btnBack.addListener(new ClickListener(){
-            @Override public void clicked(InputEvent event, float x, float y){
-                game.setScreen(new SplashScreen(game));
-            }
-        });
+        // no back button (no previous session)
 
         panel.add(title).colspan(2).center().padTop(8).row();
         panel.add(new Label("아이디", skin)).left();
@@ -89,9 +89,24 @@ public class LoginScreen implements Screen {
         panel.add(tfPass).growX().row();
         panel.add(btnLogin).left();
         panel.add(btnSignup).right().row();
-        panel.add(btnBack).colspan(2).center();
 
         root.add(panel).center();
+
+        // Focus traversal with Tab / Shift+Tab
+        final com.badlogic.gdx.scenes.scene2d.Actor[] focusables = new com.badlogic.gdx.scenes.scene2d.Actor[]{tfUser, tfPass, btnLogin, btnSignup};
+        final int[] focusIndex = new int[]{0};
+        stage.setKeyboardFocus(tfUser);
+        stage.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener(){
+            @Override public boolean keyDown(com.badlogic.gdx.scenes.scene2d.InputEvent event, int keycode) {
+                if (keycode == com.badlogic.gdx.Input.Keys.TAB) {
+                    boolean shift = com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT) || com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
+                    if (!shift) focusIndex[0] = (focusIndex[0] + 1) % focusables.length; else focusIndex[0] = (focusIndex[0] - 1 + focusables.length) % focusables.length;
+                    stage.setKeyboardFocus(focusables[focusIndex[0]]);
+                    return true;
+                }
+                return false;
+            }
+        });
     }
 
     private void showSignupDialog(String initialUser){
@@ -128,10 +143,11 @@ public class LoginScreen implements Screen {
                 if (us.isEmpty()||ps.length()<4){ msg.setText("아이디/비밀번호를 확인하세요(비번 4자 이상)"); return; }
                 if (!ps.equals(pcs)){ msg.setText("비밀번호가 일치하지 않습니다"); return; }
                 if (!store.register(us, ps)){ msg.setText("이미 존재하는 사용자입니다"); return; }
-                game.playerName = us;
                 d.hide(); activeDialog = null;
-                showAlert("완료", "가입 완료. 로그인 되었습니다.");
-                game.setScreen(new MainMenuScreen(game));
+                showAlert("완료", "가입이 완료되었습니다. 로그인 화면으로 돌아갑니다.");
+                // Pre-fill username and clear password fields
+                // Refocus to username field
+                // Leave user on Login screen (no auto-login)
             }
         });
         cancel.addListener(new ClickListener(){ @Override public void clicked(InputEvent e, float x, float y){ closeActiveDialog(); } });

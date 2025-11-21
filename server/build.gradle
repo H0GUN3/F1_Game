@@ -1,0 +1,13 @@
+plugins {
+  id 'application'
+}
+
+dependencies {
+  implementation project(":shared")
+  // Pin KryoNet to a stable version from Maven Central
+  implementation "com.esotericsoftware:kryonet:2.22.0-RC1"
+}
+
+application {
+  mainClass = 'com.mygame.f1.server.ServerLauncher'
+}
