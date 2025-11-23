@@ -45,7 +45,7 @@ public class MainMenuScreen implements Screen {
         panel.defaults().pad(10).width(320).height(48);
 
         TextButton single = new TextButton("Single Play", skin);
-        TextButton multi = new TextButton("Multi Play (TBD)", skin);
+        TextButton multi = new TextButton("Multi Play", skin);
         TextButton settings = new TextButton("Settings", skin);
         TextButton exit = new TextButton("Exit", skin);
         items = new TextButton[]{single, multi, settings, exit};

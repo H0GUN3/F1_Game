@@ -1,0 +1,21 @@
+plugins {
+    id 'application'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':shared')
+    implementation "com.esotericsoftware:kryonet:2.24.0"
+}
+
+application {
+    mainClass = 'com.mygame.f1.server.ServerLauncher'
+}
