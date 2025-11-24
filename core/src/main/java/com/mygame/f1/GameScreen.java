@@ -167,8 +167,9 @@ public class GameScreen implements Screen {
     private Set<Integer> checkpointsInside = new HashSet<>();
     private boolean insideStartLine = false;
 
-    // --- Grass (오프트랙) 영역 ---
-    // Grass 영역은 Box2D 센서로 관리되며 ContactListener에서 isOnGrass를 업데이트
+    // --- Grass (오프트랙) 영역 ---d
+    // Grass 영역은 Box2D 센서로 관리되며 ContactListener에서 isOnGrass를 업데이트 이제는 진짜 될거 같은데
+    
     private boolean isOnGrass = false;
     private float grassSpeedPenalty = 0.6f; // 60% 속도 감소
 
