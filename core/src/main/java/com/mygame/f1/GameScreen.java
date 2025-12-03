@@ -99,6 +99,8 @@ public class GameScreen implements Screen {
     private BitmapFont hudSmallFont;
     private BitmapFont hudSpeedFont;
     private BitmapFont hudLapFont; // LAP HUD 전용 큰 폰트
+    private static final float HUD_SPEED_SCALE = 0.60f; // HUD 표기 축소 비율 (최대 약 268 표시)
+    private static final float HUD_SPEED_MAX = 268f;    // HUD 표기 최대치
     private GlyphLayout layout = new GlyphLayout();
     private TextureAtlas gameAtlas; // TextureAtlas 참조
     private TextureRegion lapBestBgRegion, lapLastBgRegion;
@@ -138,7 +140,9 @@ public class GameScreen implements Screen {
     // 내구도 연동
     private float vehicleDurability = 100f; // 차량 내구도
     private float tireDurability = 100f;
-    private float tireWearRate = 0.15f; // 기본 마모율 (초당 15%/100초 소진 기준)
+    private float tireWearRate = 0.15f; // 기본 마모율 (초당 15%/100초 소진 기준) - 실제 계산은 getCompoundWearRate() 사용
+    private float tireSpeedMultiplier = 1.0f; // 컴파운드별 최고속도 보정
+    private float tireTurnMultiplier = 1.0f;  // 컴파운드별 회전력 보정 (hard 회전율 감소용)
     private int currentLap = 0; // 완료된 랩 수 (0부터 시작, 첫 랩 완료 시 1이 됨)
     private int totalLaps = 3;
     private float lapTimeSeconds = 0f;
@@ -163,7 +167,7 @@ public class GameScreen implements Screen {
     private Skin pauseSkin;
 
     // --- 물리 파라미터 ---
-    private float maxForwardSpeed = 3.5f;  // 2.7 * 1.3 = 3.51 (~3.5) (30% 증가)
+    private float maxForwardSpeed = 4.0f;  // 약 15% 상향
     private float maxReverseSpeed = 1.3f;  // 1.0 * 1.3 = 1.3 (30% 증가)
     private float forwardAcceleration = 1.7f;  // 가속력은 유지
     private float reverseAcceleration = 1.0f;  // 가속력은 유지
@@ -171,7 +175,7 @@ public class GameScreen implements Screen {
     // --- 점진적 가속 시스템 ---
     private float speedMultiplier = 0.5f; // 초기 속도는 50%부터 시작
     private float speedMultiplierTarget = 1.0f; // 목표 100%
-    private float speedRampUpRate = 0.10f; // 초당 10% 증가 (약 5초에 100% 도달, 더 느림)
+    private float speedRampUpRate = 0.03f; // 초당 3% 증가 (느리게 가속)
     private float turningPower = 10f;
     private float grip = 18.0f;
     private float minSpeedForTurn = 0.8f;
@@ -577,7 +581,7 @@ public class GameScreen implements Screen {
             return;
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT)) {
             playerCar.setLinearDamping(brakingLinearDamping);
         } else if (!isColliding) {
             playerCar.setLinearDamping(defaultLinearDamping);
@@ -633,9 +637,9 @@ public class GameScreen implements Screen {
         // 속도에 따른 회전력 감소 계산
         float currentSpeed = playerCar.getLinearVelocity().len();
         float speedRatio = Math.min(currentSpeed / maxForwardSpeed, 1.0f);  // 0.0 ~ 1.0
-        // 고속일수록 회전력 감소: 최고 속도에서 50%까지 감소
+        // 고속일수록 회전력 감소 + 타이어 회전 보정
         float turnMultiplier = 1.0f - (speedRatio * highSpeedTurnReduction);
-        float maxAngularVelocity = baseMaxAngularVelocity * turnMultiplier;
+        float maxAngularVelocity = baseMaxAngularVelocity * turnMultiplier * tireTurnMultiplier;
 
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A)) {
             targetAngularVelocity = (movingReverse && forwardSpeed < -0.5f) ? -maxAngularVelocity : maxAngularVelocity;
@@ -679,6 +683,10 @@ public class GameScreen implements Screen {
         float durabilityLimiter = (vehicleDurability <= 0f || tireDurability <= 0f) ? 0.3f : 1f;
         effectiveMaxForward *= durabilityLimiter;
         effectiveMaxReverse *= durabilityLimiter;
+
+        // 타이어 컴파운드 속도 보정
+        effectiveMaxForward *= tireSpeedMultiplier;
+        effectiveMaxReverse *= tireSpeedMultiplier;
 
         // Grass 페널티 추가 적용
         if (isOnGrass) {
@@ -893,9 +901,9 @@ public class GameScreen implements Screen {
         float y = padding;
         hudBatch.draw(speedHudRegion, x, y, texW, texH);
 
-        // 속도 계산: 최대 450km/h로 제한 (5.5 m/s = ~312 km/h * 1.1 = ~343 km/h)
-        float rawSpeed = playerCar.getLinearVelocity().len() * PPM * 1.1f; // m/s → km/h
-        float speed = Math.min(rawSpeed, 450f); // 최대 450km/h
+        // 속도 계산: HUD 표기용으로 스케일 축소, 최대 268 표기
+        float rawSpeed = playerCar.getLinearVelocity().len() * PPM * 1.1f * HUD_SPEED_SCALE; // m/s → km/h (표기 축소)
+        float speed = Math.min(rawSpeed, HUD_SPEED_MAX); // 최대 268km/h 표기
 
         String txt = String.format("%.0f", speed);
 
@@ -1411,9 +1419,9 @@ public class GameScreen implements Screen {
     }
 
     private float getCompoundWearRate() {
-        if ("soft".equalsIgnoreCase(pitSelectedCompound)) return 100f / 50f;  // 50초에 100% 소모
-        if ("hard".equalsIgnoreCase(pitSelectedCompound)) return 100f / 90f;  // 90초에 100% 소모
-        return 100f / 70f; // medium default
+        if ("soft".equalsIgnoreCase(pitSelectedCompound)) return 100f / 90f;  // 약 90초에 100% 소모
+        if ("hard".equalsIgnoreCase(pitSelectedCompound)) return 100f / 150f;  // 약 150초에 100% 소모
+        return 100f / 130f; // medium 기본 약 130초
     }
 
     private void handlePitState(float delta) {
@@ -1513,13 +1521,19 @@ public class GameScreen implements Screen {
     private void setTireCompound(String comp) {
         if ("soft".equalsIgnoreCase(comp) && tireCompoundSoftRegion != null) {
             tireCompoundRegion = tireCompoundSoftRegion;
-            tireWearRate = 0.22f;
+            tireWearRate = 100f / 90f;
+            tireSpeedMultiplier = 1.12f;   // 최고속도 +12%
+            tireTurnMultiplier = 1.0f;
         } else if ("hard".equalsIgnoreCase(comp) && tireCompoundHardRegion != null) {
             tireCompoundRegion = tireCompoundHardRegion;
-            tireWearRate = 0.12f;
+            tireWearRate = 100f / 150f;
+            tireSpeedMultiplier = 1.0f;    // 속도 보정 없음
+            tireTurnMultiplier = 0.85f;    // 회전율 15% 감소
         } else if (tireCompoundMediumRegion != null) {
             tireCompoundRegion = tireCompoundMediumRegion;
-            tireWearRate = 0.15f;
+            tireWearRate = 100f / 130f;
+            tireSpeedMultiplier = 1.0f;
+            tireTurnMultiplier = 1.0f;
         }
         pitSelectedCompound = comp;
     }
