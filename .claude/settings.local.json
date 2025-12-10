@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(./gradlew :core:compileJava:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
