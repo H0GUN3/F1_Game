@@ -172,7 +172,7 @@ public class GameScreen implements Screen {
     private boolean isOnGrass = false;
     private float grassSpeedPenalty = 0.6f; // 60% 속도 감소
 
-    // --- Pause UI ---
+    // --- Pause UI -   이제는 진짜 될때가 된거같아.--/ㅇ루밍ㄹㅇㅁㄹ밍러ㅓㅇㅁㄴ
     private boolean paused = false;
     private Stage pauseStage;
     private Skin pauseSkin;
