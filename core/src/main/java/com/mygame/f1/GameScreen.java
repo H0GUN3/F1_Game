@@ -90,7 +90,7 @@ public class GameScreen implements Screen {
     private float cameraOffsetFromCar = 0.8f;
     private Vector2 cameraTargetPosition = new Vector2();
 
-    // --- 렌더링 ---
+    // --- 렌더링 --- 왜 자꾸 안된다고만 하는거야 ㅈㄴ 짜증나ㅇ게 ;;;
     private TiledMap map;
     private OrthogonalTiledMapRenderer mapRenderer;
     private SpriteBatch batch;
